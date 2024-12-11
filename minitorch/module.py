@@ -1,3 +1,5 @@
+"""Disclaimer: AI Claude 3.5 Sonnet (Cursor on Mac) was used to help write comments and code for this file."""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Tuple
@@ -30,26 +32,38 @@ class Module:
         return list(m.values())
 
     def train(self) -> None:
-        """Set the mode of this module and all descendent modules to `train`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Set the `training flag` of this and descendent to true."""
+        self.training = True
+        [module.train() for module in self.modules()]
 
     def eval(self) -> None:
-        """Set the mode of this module and all descendent modules to `eval`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        """Set the `training flag` of this and descendent to false."""
+        self.training = False
+        [module.eval() for module in self.modules()]
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
-        """Collect all the parameters of this module and its descendents.
+        """Collect all the parameters of this module and its descendents."""
+        return [
+            (name, param) for name, param in self.__dict__["_parameters"].items()
+        ] + [
+            (f"{module_name}.{param_name}", param)
+            for module_name, module in self.__dict__["_modules"].items()
+            for param_name, param in module.named_parameters()
+        ]
+
+    def parameters(self) -> Sequence[Parameter]:
+        """Enumerate over all the parameters of this module and its descendants.
 
         Returns
         -------
             The name and `Parameter` of each ancestor parameter.
 
         """
-        raise NotImplementedError("Need to include this file from past assignment.")
-
-    def parameters(self) -> Sequence[Parameter]:
-        """Enumerate over all the parameters of this module and its descendents."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        return [param for _, param in self.__dict__["_parameters"].items()] + [
+            param
+            for module in self.__dict__["_modules"].values()
+            for param in module.parameters()
+        ]
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """Manually add a parameter. Useful helper for scalar parameters.
@@ -85,6 +99,7 @@ class Module:
         return None
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        """Call the module."""
         return self.forward(*args, **kwargs)
 
     def __repr__(self) -> str:

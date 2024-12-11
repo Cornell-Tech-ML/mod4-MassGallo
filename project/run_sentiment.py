@@ -34,8 +34,7 @@ class Conv1d(minitorch.Module):
         self.bias = RParam(1, out_channels, 1)
 
     def forward(self, input):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv1d(input, self.weights.value) + self.bias.value
 
 
 class CNNSentimentKim(minitorch.Module):
@@ -48,7 +47,7 @@ class CNNSentimentKim(minitorch.Module):
         feature_map_size=100 output channels and [3, 4, 5]-sized kernels
         followed by a non-linear activation function (the paper uses tanh, we apply a ReLu)
     2. Apply max-over-time across each feature map
-    3. Apply a Linear to size C (number of classes) followed by a ReLU and Dropout with rate 25%
+    3. Apply a Linear to size C (number of classes) followed by a Dropout with rate 25%
     4. Apply a sigmoid over the class dimension.
     """
 
@@ -61,16 +60,36 @@ class CNNSentimentKim(minitorch.Module):
     ):
         super().__init__()
         self.feature_map_size = feature_map_size
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        self.conv1d_0 = Conv1d(embedding_size, feature_map_size, filter_sizes[0])
+        self.conv1d_1 = Conv1d(embedding_size, feature_map_size, filter_sizes[1])
+        self.conv1d_2 = Conv1d(embedding_size, feature_map_size, filter_sizes[2])
+        self.linear = Linear(feature_map_size, 1)
+        self.dropout = dropout
+
 
     def forward(self, embeddings):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        embeddings = embeddings.permute(0, 2, 1)
 
+
+
+        conv1d_0 = self.conv1d_0.forward(embeddings)
+        conv1d_1 = self.conv1d_1.forward(embeddings)
+        conv1d_2 = self.conv1d_2.forward(embeddings)
+        relu_0 = conv1d_0.relu()
+        relu_1 = conv1d_1.relu()
+        relu_2 = conv1d_2.relu()
+        max_over_time_0 = relu_0.max(dim=2).view(embeddings.shape[0], self.feature_map_size).contiguous()
+        max_over_time_1 = relu_1.max(dim=2).view(embeddings.shape[0], self.feature_map_size).contiguous()
+        max_over_time_2 = relu_2.max(dim=2).view(embeddings.shape[0], self.feature_map_size).contiguous()
+        max_over_time = max_over_time_0 + max_over_time_1 + max_over_time_2
+
+        linear = self.linear.forward(max_over_time)
+        dropout = minitorch.dropout(linear, self.dropout, ignore = not self.training)
+        output = dropout.sigmoid()
+        return output
 
 # Evaluation helper methods
 def get_predictions_array(y_true, model_output):
@@ -123,7 +142,7 @@ class SentenceSentimentTrain:
         self,
         data_train,
         learning_rate,
-        batch_size=10,
+        batch_size=1,
         max_epochs=500,
         data_val=None,
         log_fn=default_log_fn,
@@ -135,49 +154,65 @@ class SentenceSentimentTrain:
         losses = []
         train_accuracy = []
         validation_accuracy = []
+
+        # X_train is now a list of [variable_length, embedding_dim] sequences
+        # y_train is the corresponding list of labels
+
         for epoch in range(1, max_epochs + 1):
             total_loss = 0.0
-
             model.train()
             train_predictions = []
             batch_size = min(batch_size, n_training_samples)
-            for batch_num, example_num in enumerate(
-                range(0, n_training_samples, batch_size)
-            ):
-                y = minitorch.tensor(
-                    y_train[example_num : example_num + batch_size], backend=BACKEND
-                )
-                x = minitorch.tensor(
-                    X_train[example_num : example_num + batch_size], backend=BACKEND
-                )
+
+
+            for example_num in range(0, n_training_samples, batch_size):
+                y = y_train[example_num : example_num + batch_size]
+                X_batch = X_train[example_num : example_num + batch_size]
+
+                max_len = max(len(seq) for seq in X_batch)
+
+                embedding_dim = len(X_batch[0][0])
+                padded = []
+                for seq in X_batch:
+                    padded_seq = seq + [[0.0]*embedding_dim]*(max_len - len(seq))
+                    padded.append(padded_seq)
+
+                y = minitorch.tensor(y, backend=BACKEND)
+                x = minitorch.tensor(padded, backend=BACKEND)
                 x.requires_grad_(True)
                 y.requires_grad_(True)
-                # Forward
+
+                # Forward pass
                 out = model.forward(x)
+
+                # Compute loss
                 prob = (out * y) + (out - 1.0) * (y - 1.0)
                 loss = -(prob.log() / y.shape[0]).sum()
+
                 loss.view(1).backward()
 
                 # Save train predictions
                 train_predictions += get_predictions_array(y, out)
                 total_loss += loss[0]
 
-                # Update
+                # Update parameters
                 optim.step()
 
-            # Evaluate on validation set at the end of the epoch
+            # Evaluate on validation set
             validation_predictions = []
             if data_val is not None:
                 (X_val, y_val) = data_val
                 model.eval()
-                y = minitorch.tensor(
-                    y_val,
-                    backend=BACKEND,
-                )
-                x = minitorch.tensor(
-                    X_val,
-                    backend=BACKEND,
-                )
+                y = y_val
+                # Pad val data similarly (here we do entire val in one go)
+                max_len_val = max(len(seq) for seq in X_val)
+                embedding_dim = len(X_val[0][0])
+                val_padded = []
+                for seq in X_val:
+                    val_padded.append(seq + [[0.0]*embedding_dim]*(max_len_val - len(seq)))
+
+                y = minitorch.tensor(y, backend=BACKEND)
+                x = minitorch.tensor(val_padded, backend=BACKEND)
                 out = model.forward(x)
                 validation_predictions += get_predictions_array(y, out)
                 validation_accuracy.append(get_accuracy(validation_predictions))
@@ -196,28 +231,21 @@ class SentenceSentimentTrain:
             )
             total_loss = 0.0
 
-
 def encode_sentences(
-    dataset, N, max_sentence_len, embeddings_lookup, unk_embedding, unks
+    dataset, N, _, embeddings_lookup, unk_embedding, unks
 ):
     Xs = []
-    ys = []
-    for sentence in dataset["sentence"][:N]:
-        # pad with 0s to max sentence length in order to enable batching
-        # TODO: move padding to training code
-        sentence_embedding = [[0] * embeddings_lookup.d_emb] * max_sentence_len
-        for i, w in enumerate(sentence.split()):
-            sentence_embedding[i] = [0] * embeddings_lookup.d_emb
-            if w in embeddings_lookup:
-                sentence_embedding[i][:] = embeddings_lookup.emb(w)
-            else:
-                # use random embedding for unks
-                unks.add(w)
-                sentence_embedding[i][:] = unk_embedding
-        Xs.append(sentence_embedding)
-
-    # load labels
     ys = dataset["label"][:N]
+    for sentence in dataset["sentence"][:N]:
+        sentence_emb = []
+        for w in sentence.split():
+            if w in embeddings_lookup:
+                sentence_emb.append(embeddings_lookup.emb(w))
+            else:
+                unks.add(w)
+                sentence_emb.append(unk_embedding)
+        Xs.append(sentence_emb)
+
     return Xs, ys
 
 

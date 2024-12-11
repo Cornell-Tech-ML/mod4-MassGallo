@@ -41,8 +41,7 @@ class Conv2d(minitorch.Module):
         self.bias = RParam(out_channels, 1, 1)
 
     def forward(self, input):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv2d(input, self.weights.value) + self.bias.value
 
 
 class Network(minitorch.Module):
@@ -67,12 +66,50 @@ class Network(minitorch.Module):
         self.mid = None
         self.out = None
 
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Step 1: Conv2d(in_channels=1, out_channels=4, kernel=3x3)
+        self.conv1 = Conv2d(1, 4, 3, 3)
+        # Step 2: Conv2d(in_channels=4, out_channels=8, kernel=3x3)
+        self.conv2 = Conv2d(4, 8, 3, 3)
+        in_features = 8 * 7 * 7
+
+        # Step 5: Linear layer from 288 to 64
+        self.lin1 = Linear(in_features, 64)
+        self.lin2 = Linear(64, C)
+
+        self.dropout_rate = 0.25
 
     def forward(self, x):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # x: (BATCH, 1, 28, 28)
+
+        # Step 1: conv1 + ReLU
+        c1 = self.conv1(x)  # (BATCH,4,26,26)
+        self.mid = c1.relu()
+
+        # Step 2: conv2 + ReLU
+        c2 = self.conv2(self.mid)  # (BATCH,8,24,24)
+        self.out = c2.relu()
+
+        # Step 3: Pool 4x4
+        # Use maxpool2d from minitorch.nn
+        pooled = minitorch.maxpool2d(self.out, (4, 4))  # (BATCH,8,7,7)
+
+        # Step 4: Flatten to BATCH x (8*7*7)
+        batch = pooled.shape[0]
+
+        flattened = pooled.view(batch, 8 * 7 * 7)
+
+        # Step 5: Linear(288->64) + ReLU + Dropout(25%)
+        l1 = self.lin1(flattened)  # (BATCH,64)
+        l1_relu = l1.relu()
+        l1_drop = minitorch.dropout(l1_relu, self.dropout_rate, ignore=not self.training)
+
+        # Step 6: Linear(64->C)
+        l2 = self.lin2(l1_drop) # (BATCH,C)
+
+        # Step 7: logsoftmax over class dimension
+        # class dimension is 1 here
+        out = minitorch.logsoftmax(l2, dim=1)
+        return out
 
 
 def make_mnist(start, stop):
