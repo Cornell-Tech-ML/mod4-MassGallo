@@ -7,6 +7,8 @@ from minitorch import Tensor
 from .strategies import assert_close
 from .tensor_strategies import tensors
 
+import random
+
 
 @pytest.mark.task4_3
 @given(tensors(shape=(1, 1, 4, 4)))
@@ -31,8 +33,48 @@ def test_avg(t: Tensor) -> None:
 @pytest.mark.task4_4
 @given(tensors(shape=(2, 3, 4)))
 def test_max(t: Tensor) -> None:
-    # TODO: Implement for Task 4.4.
-    raise NotImplementedError("Need to implement for Task 4.4")
+    # TESTING FORWARD
+
+    out = t.max(dim=2)
+    print(out)
+    print(t)
+    assert_close(out[0, 0, 0], max(t[0, 0, i] for i in range(4)))
+    assert_close(out[0, 1, 0], max(t[0, 1, i] for i in range(4)))
+    assert_close(out[0, 2, 0], max(t[0, 2, i] for i in range(4)))
+    assert_close(out[1, 0, 0], max(t[1, 0, i] for i in range(4)))
+    assert_close(out[1, 1, 0], max(t[1, 1, i] for i in range(4)))
+    assert_close(out[1, 2, 0], max(t[1, 2, i] for i in range(4)))
+
+    out = t.max(dim=1)
+    assert_close(out[0, 0, 0], max(t[0, i, 0] for i in range(3)))
+    assert_close(out[0, 0, 1], max(t[0, i, 1] for i in range(3)))
+    assert_close(out[0, 0, 2], max(t[0, i, 2] for i in range(3)))
+    assert_close(out[0, 0, 3], max(t[0, i, 3] for i in range(3)))
+    assert_close(out[1, 0, 0], max(t[1, i, 0] for i in range(3)))
+    assert_close(out[1, 0, 1], max(t[1, i, 1] for i in range(3)))
+    assert_close(out[1, 0, 2], max(t[1, i, 2] for i in range(3)))
+    assert_close(out[1, 0, 3], max(t[1, i, 3] for i in range(3)))
+
+    out = t.max(dim=0)
+    assert_close(out[0, 0, 0], max(t[i, 0, 0] for i in range(2)))
+    assert_close(out[0, 0, 1], max(t[i, 0, 1] for i in range(2)))
+    assert_close(out[0, 0, 2], max(t[i, 0, 2] for i in range(2)))
+    assert_close(out[0, 0, 3], max(t[i, 0, 3] for i in range(2)))
+    assert_close(out[0, 1, 0], max(t[i, 1, 0] for i in range(2)))
+    assert_close(out[0, 1, 1], max(t[i, 1, 1] for i in range(2)))
+    assert_close(out[0, 1, 2], max(t[i, 1, 2] for i in range(2)))
+    assert_close(out[0, 1, 3], max(t[i, 1, 3] for i in range(2)))
+
+    # TESTING BACKWARD
+    noise = minitorch.zeros(t.shape)
+    for pos in t._tensor.indices():
+        noise[pos] = random.random()
+
+    input = t + noise
+
+    minitorch.grad_check(lambda a: a.max(dim=0), input)
+    minitorch.grad_check(lambda a: a.max(dim=1), input)
+    minitorch.grad_check(lambda a: a.max(dim=2), input)
 
 
 @pytest.mark.task4_4

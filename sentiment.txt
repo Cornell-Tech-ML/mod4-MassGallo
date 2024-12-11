@@ -1,0 +1,54 @@
+Epoch 1, loss 323.042337455172, train accuracy: 52.00%
+Validation accuracy: 48.00%
+Best Valid accuracy: 48.00%
+Epoch 2, loss 302.01735463676556, train accuracy: 56.89%
+Validation accuracy: 51.00%
+Best Valid accuracy: 51.00%
+Epoch 3, loss 273.0957239552862, train accuracy: 64.00%
+Validation accuracy: 53.00%
+Best Valid accuracy: 53.00%
+Epoch 4, loss 235.04700535936684, train accuracy: 70.89%
+Validation accuracy: 68.00%
+Best Valid accuracy: 68.00%
+Epoch 5, loss 198.50398420034938, train accuracy: 74.67%
+Validation accuracy: 75.00%
+Best Valid accuracy: 75.00%
+Epoch 6, loss 174.81654706928694, train accuracy: 78.22%
+Validation accuracy: 67.00%
+Best Valid accuracy: 75.00%
+Epoch 7, loss 154.9812455489141, train accuracy: 83.11%
+Validation accuracy: 75.00%
+Best Valid accuracy: 75.00%
+Epoch 8, loss 127.54794407893826, train accuracy: 84.22%
+Validation accuracy: 69.00%
+Best Valid accuracy: 75.00%
+Epoch 9, loss 113.37517354628352, train accuracy: 85.78%
+Validation accuracy: 74.00%
+Best Valid accuracy: 75.00%
+Epoch 10, loss 98.95250465551696, train accuracy: 87.78%
+Validation accuracy: 74.00%
+Best Valid accuracy: 75.00%
+Epoch 11, loss 107.30412022588929, train accuracy: 84.44%
+Validation accuracy: 71.00%
+Best Valid accuracy: 75.00%
+Epoch 12, loss 84.07464812223778, train accuracy: 89.56%
+Validation accuracy: 69.00%
+Best Valid accuracy: 75.00%
+Epoch 13, loss 83.97162463104598, train accuracy: 88.00%
+Validation accuracy: 72.00%
+Best Valid accuracy: 75.00%
+Epoch 14, loss 86.38966828856374, train accuracy: 85.56%
+Validation accuracy: 70.00%
+Best Valid accuracy: 75.00%
+Epoch 15, loss 85.07751977750767, train accuracy: 86.22%
+Validation accuracy: 74.00%
+Best Valid accuracy: 75.00%
+Epoch 16, loss 80.54446196202649, train accuracy: 86.67%
+Validation accuracy: 73.00%
+Best Valid accuracy: 75.00%
+Epoch 17, loss 94.62251435860234, train accuracy: 85.78%
+Validation accuracy: 72.00%
+Best Valid accuracy: 75.00%
+Epoch 18, loss 92.02487714370791, train accuracy: 86.22%
+Validation accuracy: 72.00%
+Best Valid accuracy: 75.00%
